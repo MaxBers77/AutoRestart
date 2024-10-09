@@ -45,14 +45,12 @@ public class App
     }
 
     private static void stopProcess(String fileName){
-        System.out.println("stopProcess");
         String command="get-process |where-object{$_.Path -Like \""+fileName+"\"}|Stop-Process";
         PowerShell powerShell=PowerShell.openSession();
         powerShell.executeCommand(command);
         powerShell.close();
     }
     private static String readLastLine(File file){
-        System.out.println("readLastLine");
         String result=null;
         try (RandomAccessFile raf=new RandomAccessFile(file,"r")){
             long startIndex= file.length();
@@ -69,7 +67,6 @@ public class App
         return result;
     }
     private static void startProcess(String fileName){
-        System.out.println("startProcess");
         ProcessBuilder pb=new ProcessBuilder(fileName);
         try {
             pb.start();
@@ -79,7 +76,6 @@ public class App
     }
 
     private static void waiting(String sec){
-        System.out.println("wait"+sec);
         int msc=Integer.parseInt(sec)*1000;
         try {
             Thread.sleep(msc);

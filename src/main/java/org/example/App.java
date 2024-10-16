@@ -1,8 +1,12 @@
 package org.example;
 
 import com.profesorfalken.jpowershell.PowerShell;
+import org.slf4j.Logger;
 
 import java.io.*;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Properties;
 
 /**
@@ -12,11 +16,13 @@ import java.util.Properties;
 public class App 
 {
     public static void main( String[] args ){
+        Logger logger = org.slf4j.LoggerFactory.getLogger(App.class);
         File file=new File("C:\\AutoRestart\\autoRestart.properties");
         Properties props=new Properties();
         try {
             props.load(new FileReader(file));
         } catch (IOException e) {
+            logger.error("Ошибка при чтении файла C:\\AutoRestart\\autoRestart.properties");
             throw new RuntimeException(e);
         }
 
@@ -26,19 +32,21 @@ public class App
         String delay=props.getProperty("delay");
         String pathToLog= props.getProperty("pathToLog");
 
-        File logFile=new File(pathToLog);
         String currentLastLine=null;
         String previousLastLine=null;
 
+
         while (true){
-             currentLastLine=readLastLine(logFile);
+             File logFile=new File(getCurrentLogFile(pathToLog));
+             currentLastLine=readLastLine(logFile, logger);
             if (!currentLastLine.equals(previousLastLine) && currentLastLine.contains(keyPhrase)){
+                logger.info("Перезапуск целевого файла");
                 previousLastLine=currentLastLine;
                 stopProcess(fileName);
 
                 waiting(delay);
 
-                startProcess(fileName);
+                startProcess(fileName,logger);
             }
             waiting(period);
         }
@@ -50,7 +58,7 @@ public class App
         powerShell.executeCommand(command);
         powerShell.close();
     }
-    private static String readLastLine(File file){
+    private static String readLastLine(File file, Logger logger){
         String result=null;
         try (RandomAccessFile raf=new RandomAccessFile(file,"r")){
             long startIndex= file.length();
@@ -62,15 +70,18 @@ public class App
                 startIndex--;
             }
         } catch (IOException e) {
+
+            logger.error("Ошибка при чтении log файла!");
             throw new RuntimeException(e);
         }
         return result;
     }
-    private static void startProcess(String fileName){
+    private static void startProcess(String fileName, Logger logger){
         ProcessBuilder pb=new ProcessBuilder(fileName);
         try {
             pb.start();
         } catch (IOException e) {
+            logger.error("Ошибка при попытке запуска целевого файла!");
             throw new RuntimeException(e);
         }
     }
@@ -82,5 +93,11 @@ public class App
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+    }
+    private static String getCurrentLogFile(String pathToLog){
+        DateFormat dFYearMonth=new SimpleDateFormat("yyyy.MM");
+        DateFormat dFYearMonthDay=new SimpleDateFormat("yyyy.MM.dd");
+        String result=pathToLog+"\\Logs_"+dFYearMonth.format(new Date())+"\\stack."+dFYearMonthDay.format(new Date())+".log";
+        return result;
     }
 }
